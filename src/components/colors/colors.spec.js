@@ -21,24 +21,29 @@ describe('md-colors', function () {
   describe('directive', function () {
 
     function createElement(scope, options) {
-      var elementString = supplant('<div md-colors="{background: \'{theme}-{palette}{hue}{opacity}\'}" {attrs}></div>', {
-        attrs   : options.attrs,
-        palette : options.palette,
-        theme   : options.theme || 'default',
-        hue     : '-' + (options.hue || '500'),
-        opacity : '-' + (options.opacity || 1)
-      });
+      var style =  supplant("{theme}-{palette}-{hue}-{opacity}", {
+              attrs   : options.attrs,
+              palette : options.palette,
+              theme   : options.theme || 'default',
+              hue     : options.hue || (options.palette === 'accent' ? 'A200' : '500'),
+              opacity : options.opacity || 1
+            });
+      var markup = supplant('<div md-colors="{background: \'{0}\'}" {1} ></div>', [style, options.attrs]);
+      var element = $compile( markup )(scope);
 
-      var element = $compile(elementString)(scope);
-      scope.$apply();
+      scope.$apply(function() {
+        angular.element(document.body).append( element );
+      });
 
       return element;
     }
 
     function setup(options) {
+      var hue = options.hue = options.hue || '500';
+
       var element = createElement(scope, {
         palette: options.palette,
-        hue: options.hue = options.hue || '500',
+        hue: hue,
         opacity: options.opacity,
         theme: options.theme
       });
@@ -143,7 +148,7 @@ describe('md-colors', function () {
       it('should accept accent palette', function() {
         var type = 'accent';
         var paletteName = $mdTheming.THEMES['default'].colors[type].name;
-        var color = $mdColorPalette[paletteName]['500'].value;
+        var color = $mdColorPalette[paletteName]['A200'].value;
         var expectedRGB = supplant('rgb({0}, {1}, {2})', [color[0], color[1], color[2]]);
         var element = createElement(scope, { palette: type });
 
@@ -176,6 +181,74 @@ describe('md-colors', function () {
         expect(element[0].style.background).toContain( expectedRGB );
       });
 
+      describe('hues', function () {
+        /**
+         * <div md-colors="{background: 'primary-hue-1'}">
+         */
+        it('should accept primary color palette with hue 1', function() {
+          var type = 'primary';
+          var hue = 'hue-1';
+          var palette = $mdTheming.THEMES['default'].colors[type];
+          var paletteName = palette.name;
+          var paletteHue = palette.hues[hue];
+          var color = $mdColorPalette[paletteName][paletteHue].value;
+          var expectedRGB = supplant('rgb({0}, {1}, {2})', [color[0], color[1], color[2]]);
+          var element = createElement(scope, { palette: type, hue: hue });
+
+          expect( element[0].style.background ).toContain( expectedRGB );
+        });
+
+        /**
+         * <div md-colors="{background: 'primary-hue-2'}">
+         */
+        it('should accept primary color palette with hue 2', function() {
+          var type = 'primary';
+          var hue = 'hue-2';
+          var palette = $mdTheming.THEMES['default'].colors[type];
+          var paletteName = palette.name;
+          var paletteHue = palette.hues[hue];
+          var color = $mdColorPalette[paletteName][paletteHue].value;
+          var expectedRGB = supplant('rgb({0}, {1}, {2})', [color[0], color[1], color[2]]);
+          var element = createElement(scope, { palette: type, hue: hue });
+
+          expect( element[0].style.background ).toContain(expectedRGB);
+        });
+
+        /**
+         * <div md-colors="{background: 'primary-hue-3'}">
+         */
+        it('should accept primary color palette with hue 3', function() {
+          var type = 'primary';
+          var hue = 'hue-3';
+          var palette = $mdTheming.THEMES['default'].colors[type];
+          var paletteName = palette.name;
+          var paletteHue = palette.hues[hue];
+          var color = $mdColorPalette[paletteName][paletteHue].value;
+          var expectedRGB = supplant('rgb({0}, {1}, {2})', [color[0], color[1], color[2]]);
+          var element = createElement(scope, { palette: type, hue: hue });
+
+          expect(element[0].style.background).toContain(expectedRGB);
+        });
+
+        /**
+         * <div md-colors="{background: 'primary-hue-1-0.2'}">
+         */
+        it('should accept primary color palette with hue 1 and 0.2 opacity', function() {
+          var type = 'primary';
+          var hue = 'hue-1';
+          var opacity = 0.2;
+
+          var palette = $mdTheming.THEMES['default'].colors[type];
+          var paletteName = palette.name;
+          var paletteHue = palette.hues[hue];
+          var color = $mdColorPalette[paletteName][paletteHue].value;
+          var expectedRGB = supplant('rgba({0}, {1}, {2}, {3})', [color[0], color[1], color[2], opacity]);
+          var element = createElement(scope, { palette: type, hue: hue, opacity: opacity });
+
+          expect(element[0].style.background).toContain(expectedRGB);
+        });
+      });
+
       describe('custom themes', function () {
 
         /**
@@ -191,6 +264,55 @@ describe('md-colors', function () {
           expect(element[0].style.background).toContain( expectedRGB );
         });
       });
+
+      describe('mdColors integration', function () {
+        /**
+         * <div md-theme="myTheme">
+         *   <div md-colors="{background: 'primary'}" >
+         * </div>
+         */
+        it('should automatically inject myTheme as the theme prefix', function () {
+
+          var type = 'primary';
+          var paletteName = $mdTheming.THEMES['myTheme'].colors[type].name;
+          var color = $mdColorPalette[paletteName]['500'].value;
+          var expectedRGB = supplant('rgb({0}, {1}, {2})', [color[0], color[1], color[2]]);
+
+
+          var markup = '<div md-theme="myTheme"><div md-colors="{background: \'primary\'}" ></div></div>';
+          var element = $compile( markup )(scope);
+
+          expect(element.children()[0].style.background).toContain( expectedRGB );
+        });
+
+        /**
+         * <div md-theme="{{theme}}">
+         *   <div md-colors="{background: 'primary'}" >
+         * </div>
+         */
+        it('should register for theme changes and inject myTheme as the theme prefix', function () {
+
+          var type = 'primary';
+          var paletteName = $mdTheming.THEMES['myTheme'].colors[type].name;
+          var color = $mdColorPalette[paletteName]['500'].value;
+          var expectedRGB = supplant('rgb({0}, {1}, {2})', [color[0], color[1], color[2]]);
+
+          scope.theme = 'myTheme';
+          var markup = '<div md-theme="{{theme}}"><div md-colors="{background: \'primary\'}" ></div></div>';
+          var element = $compile( markup )(scope);
+
+          expect(element.children()[0].style.background).toContain( expectedRGB );
+
+          paletteName = $mdTheming.THEMES['default'].colors[type].name;
+          color = $mdColorPalette[paletteName]['500'].value;
+          expectedRGB = supplant('rgb({0}, {1}, {2})', [color[0], color[1], color[2]]);
+
+          scope.theme = 'default';
+          scope.$apply();
+
+          expect(element.children()[0].style.background).toContain( expectedRGB );
+        });
+      })
     });
 
     describe('watched values', function () {
@@ -325,7 +447,7 @@ describe('md-colors', function () {
       var color = $mdColorPalette['red']['200'].value;
       var expectedRGB = supplant('rgb({0}, {1}, {2})', [color[0], color[1], color[2]]);
 
-      $mdColors.applyThemeColors(element, scope, '{background: \'red-200\'}');
+      $mdColors.applyThemeColors(element, { background: 'red-200' });
       expect(element[0].style.background).toContain( expectedRGB );
     }));
 
@@ -336,5 +458,25 @@ describe('md-colors', function () {
       var themeColor = $mdColors.getThemeColor('red-200');
       expect(themeColor).toBe( expectedRGB );
     }));
+
+    describe('palette hues', function () {
+      it('should throw error on hue-4', inject(function ($mdColors) {
+        expect(function () {
+          $mdColors.getThemeColor('primary-hue-4')
+        }).toThrowError();
+      }));
+
+      it('should throw error on hue-0', inject(function ($mdColors) {
+        expect(function () {
+          $mdColors.getThemeColor('primary-hue-0')
+        }).toThrowError();
+      }));
+
+      it('should throw error on usage of defined palette and hue', inject(function ($mdColors) {
+        expect(function () {
+          $mdColors.getThemeColor('red-hue-1')
+        }).toThrowError();
+      }));
+    });
   })
 });

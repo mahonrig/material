@@ -193,6 +193,9 @@ describe('<md-select>', function() {
 
     // FIXME- does not work with minified, jquery
     //expect($document[0].activeElement).toBe(select[0]);
+
+    // Clean up the DOM after the test.
+    $document[0].body.removeChild(select[0]);
   }));
 
   it('should remove the input-container focus state', inject(function($rootScope, $timeout) {
@@ -835,6 +838,29 @@ describe('<md-select>', function() {
 
         expect($rootScope.testForm.$pristine).toBe(true);
       }));
+
+      it('should correctly update the input containers label', inject(function($rootScope) {
+        var el = setupSelect('ng-required="isRequired" ng-model="someModel"');
+        var label = el.find('label');
+
+        expect(label).not.toHaveClass('md-required');
+
+        $rootScope.$apply('isRequired = true');
+
+        expect(label).toHaveClass('md-required');
+      }));
+
+      it('should correctly update the input containers label when asterisk is disabled', inject(function($rootScope) {
+        var el = setupSelect('ng-required="isRequired" md-no-asterisk ng-model="someModel"');
+        var label = el.find('label');
+
+        expect(label).not.toHaveClass('md-required');
+
+        $rootScope.$apply('isRequired = true');
+
+        expect(label).not.toHaveClass('md-required');
+      }));
+
     });
 
     describe('view->model', function() {
